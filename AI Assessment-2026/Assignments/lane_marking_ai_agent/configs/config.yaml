@@ -1,0 +1,112 @@
+# config.yaml - Configuration for Lane Marking Detection AI Agent
+# =============================================================================
+
+# Model Configuration
+model:
+  backbone: "efficientnet-b3"           # Options: efficientnet-b3, resnet50, convnext-tiny
+  num_lanes: 4                          # Max lanes to detect
+  num_classes: 8                        # Lane types: solid_white, solid_yellow, dashed_white, dashed_yellow, 
+                                        #              double_solid, double_dashed, botts_dots, unknown
+  input_height: 288                     # Model input height
+  input_width: 800                      # Model input width
+  griding_num: 100                      # Number of grid columns for row-wise classification
+  cls_num_per_lane: 56                  # Number of row anchors
+  use_film: true                        # Enable FiLM weather conditioning
+  use_instance_embedding: true          # Enable instance embedding for lane clustering
+  weather_embedding_dim: 128
+  
+# Weather Classification
+weather:
+  num_classes: 6                        # clear, rain, fog, snow, night, glare
+  classifier_backbone: "mobilenet-v3-small"
+  confidence_threshold: 0.7
+  
+# Training Configuration
+training:
+  batch_size: 16
+  num_epochs: 100
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  scheduler: "cosine"
+  warmup_epochs: 5
+  grad_clip: 1.0
+  mixed_precision: true
+  
+  # Data Augmentation
+  augmentation:
+    brightness: 0.2
+    contrast: 0.2
+    saturation: 0.2
+    hue: 0.1
+    weather_simulation: true
+    perspective_warp: true
+    occlusion_prob: 0.3
+    
+  # Loss Weights
+  loss_weights:
+    lane_cls: 1.0
+    lane_loc: 0.5
+    weather_cls: 0.3
+    instance: 0.1
+    
+# Inference Configuration
+inference:
+  confidence_threshold: 0.6
+  lane_lost_threshold: 0.5
+  lane_lost_frames: 3
+  nms_threshold: 0.3
+  use_tta: false                        # Test-time augmentation (slower but more robust)
+  
+# Preprocessing
+preprocessing:
+  mean: [0.485, 0.456, 0.406]
+  std: [0.229, 0.224, 0.225]
+  weather_enhancement:
+    dehaze: true
+    denoise: true
+    glare_suppression: true
+    
+# Postprocessing
+postprocessing:
+  min_lane_points: 10
+  polynomial_degree: 3
+  smoothing_factor: 0.8
+  
+# Hardware Configuration
+hardware:
+  device: "cuda"                        # cuda, cpu
+  num_workers: 4
+  pin_memory: true
+  
+# Edge Deployment
+edge:
+  target_device: "jetson_agx_orin"
+  tensorrt:
+    fp16: true
+    int8: false
+    max_batch_size: 1
+    workspace_size: 4096                # MB
+  max_latency_ms: 30
+  max_memory_mb: 4096
+  
+# ROS 2 Integration
+ros2:
+  node_name: "lane_detection_node"
+  input_topic: "/camera/image_raw"
+  output_topic: "/perception/lane_markings"
+  frame_id: "camera_link"
+  publish_rate: 30                      # Hz
+  
+# Data Configuration
+data:
+  train_root: "./data/train"
+  val_root: "./data/val"
+  test_root: "./data/test"
+  dataset_type: "tusimple"
+  
+# Logging
+logging:
+  level: "INFO"
+  log_dir: "./logs"
+  tensorboard: true
+  save_interval: 5                      # Save checkpoint every N epochs
